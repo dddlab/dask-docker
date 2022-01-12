@@ -7,7 +7,7 @@ on:
 jobs:
   check-version:
     runs-on: ubuntu-latest
-    if: github.repository == 'dask/dask-docker'
+    if: github.repository == 'dddlab/dask-docker'
 
     steps:
       - uses: actions/checkout@v2

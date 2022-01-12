@@ -58,9 +58,35 @@ RUN mkdir /opt/app \
     exit 1; \
     fi
 
+RUN \
+    # download R studio
+    curl --silent -L --fail \
+        https://s3.amazonaws.com/rstudio-ide-build/server/bionic/amd64/rstudio-server-1.2.1578-amd64.deb > /tmp/rstudio.deb && \
+    \
+    # install R studio
+    apt-get update && \
+    apt-get install -y --no-install-recommends /tmp/rstudio.deb && \
+    rm /tmp/rstudio.deb && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Copy over the example as NB_USER. Unfortuantely we can't use $NB_UID/$NB_GID
 # in the `--chown` statement, so we need to hardcode these values.
 COPY --chown=1000:100 examples/ /home/$NB_USER/examples
 COPY prepare.sh /usr/bin/prepare.sh
+
+USER ${NB_USER}
+
+RUN pip install \ 
+        jupyter-server-proxy==1.6.0 \
+        jupyter-rsession-proxy==1.2.0 && \
+    jupyter labextension install @jupyterlab/server-proxy && \
+    \
+    pip install \
+        jupyterlab-git==0.32.2 \
+        nbgitpuller==0.10.1 && \
+    jupyter serverextension enable --sys-prefix nbgitpuller && \
+    jupyter lab build
+
+USER root
 
 ENTRYPOINT ["tini", "--", "/usr/bin/prepare.sh"]
